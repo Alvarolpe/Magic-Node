@@ -1,5 +1,5 @@
 {
-  description = "Nix dev flake";
+  description = "Dev shell for HackUDC 2026";
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -22,6 +22,7 @@
           devShells.default = pkgs.mkShell {
             buildInputs = with pkgs; [
               watchexec
+              python3
             ];
           };
         };
