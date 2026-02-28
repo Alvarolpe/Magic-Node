@@ -8,7 +8,7 @@ class FileData:
     """Data stored from the file parsing"""
 
     name: str
-    contents: list(str)
+    contents: list[str]
     creation_date: datetime
     extras: str = "{}" # JSON serialized
 
@@ -38,8 +38,3 @@ def data_from_csv(csv_data: str) -> list[FileData]:
         acc.append(FileData(file["name"], file["contents"], file["creation_date"], file["extras"]))
 
     return acc
-
-
-
-
-FileData("ligma", ["akslhfgaiowg", "aslfkak"], datetime.now(), "isgdhaoiegb")

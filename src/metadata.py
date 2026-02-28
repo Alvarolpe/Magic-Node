@@ -2,19 +2,27 @@ import PyPDF2 as pdf
 import json
 import glob
 import os
+import logic
+import datetime 
 
-path = os.getcwd()
-for doc in glob.glob(f"{path}/dataset/*.pdf"):
+path = os.getcwd()[:-4]
+for doc in glob.glob(f"{path}\dataset\*.pdf"):
     reader = pdf.PdfReader(doc)
     meta = reader.metadata
+
+    contents = list()
+    try:
+        for page in doc.pages:
+            contents.append(page.extract_text())
+    except:
+        continue
 
     data = {
         "author": f"{meta.author}",
         "creator": f"{meta.creator}",
-        "producer": f"{meta.producer}",
-        "title": f"{meta.title}"
+        "producer": f"{meta.producer}"
     }
 
     reader_string = json.dumps(data, indent=4)
-    with open(f"{path}/metaData/{os.path.basename(doc).split('.')[0]}.json", "w") as f:
-        f.write(reader_string)
+    
+    logic.dataclass(name= meta.title, contents= contents, creation_time = datetime.fromtimestamp(doc), extra= reader_string)
