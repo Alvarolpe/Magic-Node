@@ -1,10 +1,11 @@
+import pypdf as pdf
 import json
 import glob
-import data_model
+import src.data_model as data_model
 import datetime
 import os
-from pathlib import PurePosixPath, Path
-import PyPDF2 as pdf
+from pathlib import PurePosixPath, Path 
+
 
 def data_from_pdf(pdf_data: str):
     reader = pdf.PdfReader(pdf_data)

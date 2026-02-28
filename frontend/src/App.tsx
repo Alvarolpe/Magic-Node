@@ -5,8 +5,20 @@ import QueryView from './components/QueryView'
 
 type TabType = 'extract' | 'store' | 'query'
 
+interface FileMetadata {
+  name: string
+  contents: string[]
+  creation_date: string
+  extra: string
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('extract')
+  const [extractedData, setExtractedData] = useState<FileMetadata[]>([])
+
+  const handleDataExtracted = (data: FileMetadata[]) => {
+    setExtractedData(data)
+  }
 
   return (
     <div className="container">
@@ -38,8 +50,8 @@ function App() {
         </div>
 
         <div className="tab-content">
-          {activeTab === 'extract' && <ExtractView />}
-          {activeTab === 'store' && <StoreView />}
+          {activeTab === 'extract' && <ExtractView onDataExtracted={handleDataExtracted} />}
+          {activeTab === 'store' && <StoreView extractedData={extractedData} />}
           {activeTab === 'query' && <QueryView />}
         </div>
       </div>

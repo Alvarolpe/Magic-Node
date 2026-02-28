@@ -1,23 +1,59 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-function StoreView() {
-  const [inputFile, setInputFile] = useState('')
-  const [host, setHost] = useState('localhost')
-  const [port, setPort] = useState('9090')
+interface FileMetadata {
+  name: string
+  contents: string[]
+  creation_date: string
+  extra: string
+}
+
+interface StoreViewProps {
+  extractedData: FileMetadata[]
+}
+
+function StoreView({ extractedData }: StoreViewProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const [dataToStore, setDataToStore] = useState<FileMetadata[]>([])
+
+  // Update data when extractedData changes
+  useEffect(() => {
+    if (extractedData.length > 0) {
+      setDataToStore(extractedData)
+    }
+  }, [extractedData])
 
   const handleStore = async () => {
+    if (dataToStore.length === 0) {
+      setError('No data to store. Please extract metadata first.')
+      return
+    }
+
     setIsLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      const response = await fetch('http://localhost:5004/store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToStore),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Store failed: ${response.statusText}`)
+      }
+
+      const result = await response.json()
       
-      setSuccess(`Successfully stored metadata to ${host}:${port}`)
+      if (result.status === 'success') {
+        setSuccess(`Successfully stored ${dataToStore.length} documents metadata`)
+      } else {
+        throw new Error(result.detail || 'Unknown error occurred')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to store metadata')
     } finally {
@@ -29,51 +65,28 @@ function StoreView() {
     <div>
       <h2 style={{ marginBottom: '1.5rem' }}>Store Metadata to Database</h2>
       
-      <div className="form-group">
-        <label htmlFor="input">Input File (CSV)</label>
-        <input
-          id="input"
-          type="text"
-          value={inputFile}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputFile(e.target.value)}
-          placeholder="data.csv"
-        />
-      </div>
-
-      <div className="filter-section" style={{ marginTop: '1.5rem', borderTop: 'none', paddingTop: 0 }}>
-        <div className="form-group">
-          <label htmlFor="host">Host</label>
-          <input
-            id="host"
-            type="text"
-            value={host}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHost(e.target.value)}
-            placeholder="localhost"
-          />
+      {dataToStore.length > 0 && (
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+          <strong>Ready to store:</strong> {dataToStore.length} documents
         </div>
+      )}
 
-        <div className="form-group">
-          <label htmlFor="port">Port</label>
-          <input
-            id="port"
-            type="text"
-            value={port}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPort(e.target.value)}
-            placeholder="9090"
-          />
+      {dataToStore.length === 0 && (
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#fff3cd', borderRadius: '8px' }}>
+          No data available. Please go to "Extract Metadata" tab and extract metadata first.
         </div>
-      </div>
+      )}
 
       <button 
         className="btn btn-primary" 
         onClick={handleStore}
-        disabled={isLoading}
+        disabled={isLoading || dataToStore.length === 0}
       >
         {isLoading ? 'Storing...' : 'Store to Database'}
       </button>
 
-      {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
+      {error && <div className="error" style={{ marginTop: '1rem' }}>{error}</div>}
+      {success && <div className="success" style={{ marginTop: '1rem' }}>{success}</div>}
     </div>
   )
 }

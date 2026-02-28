@@ -4,7 +4,7 @@ interface FileMetadata {
   name: string
   contents: string[]
   creation_date: string
-  extras: string
+  extra: string
 }
 
 interface UploadedFile {
@@ -19,8 +19,6 @@ interface ExtractViewProps {
 }
 
 function ExtractView({ onDataExtracted }: ExtractViewProps) {
-  const [directory, setDirectory] = useState('')
-  const [output, setOutput] = useState('a.out')
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<FileMetadata[] | null>(null)
   const [error, setError] = useState('')
@@ -54,7 +52,7 @@ function ExtractView({ onDataExtracted }: ExtractViewProps) {
         formData.append('files', selectedFiles[i])
       }
 
-      const response = await fetch('http://localhost:5000/files', {
+      const response = await fetch('http://localhost:5004/files', {
         method: 'POST',
         body: formData,
       })
@@ -83,33 +81,29 @@ function ExtractView({ onDataExtracted }: ExtractViewProps) {
     setResult(null)
 
     try {
-      // Simulate API call - in production, this would call the Python CLI or API
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Call the backend /extract endpoint which uses the Python logic
+      const response = await fetch('http://localhost:5004/extract', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Extract failed: ${response.statusText}`)
+      }
+
+      const data = await response.json()
       
-      // Mock extracted data
-      const mockData: FileMetadata[] = [
-        {
-          name: 'acta_constitucion_novatech.pdf',
-          contents: ['Page 1 content...', 'Page 2 content...'],
-          creation_date: '2024-01-15',
-          extras: '{"author": "Admin", "creator": "PDF Editor"}'
-        },
-        {
-          name: 'factura_GAL-2024-0892.pdf',
-          contents: ['Invoice content...'],
-          creation_date: '2024-03-20',
-          extras: '{"author": "Finance Dept"}'
-        },
-        {
-          name: 'email_seguimiento_aurora.txt',
-          contents: ['Email body...'],
-          creation_date: '2024-02-10',
-          extras: '{}'
+      if (data.status === 'success') {
+        setResult(data.data)
+        // Pass the extracted data to parent component
+        if (onDataExtracted) {
+          onDataExtracted(data.data)
         }
-      ]
-      
-      setResult(mockData)
-      onDataExtracted?.(mockData)
+      } else {
+        throw new Error(data.detail || 'Unknown error')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to extract metadata')
     } finally {
@@ -119,94 +113,48 @@ function ExtractView({ onDataExtracted }: ExtractViewProps) {
 
   return (
     <div>
-      <h2 style={{ marginBottom: '1.5rem' }}>Extract Metadata from Documents</h2>
+      <h2 style={{ marginBottom: '1.5rem' }}>Extract Metadata from Dataset</h2>
       
       {/* File Upload Section */}
-      <div className="upload-section" style={{ 
-        marginBottom: '2rem', 
-        padding: '1.5rem', 
-        border: '2px dashed #ccc', 
-        borderRadius: '8px',
-        backgroundColor: '#f9f9f9'
-      }}>
-        <h3 style={{ marginBottom: '1rem' }}>Upload Files to Backend</h3>
-        <p style={{ marginBottom: '1rem', color: '#666' }}>
-          Select multiple files to upload to the backend /files endpoint as a JSON list
-        </p>
-        
+      <div style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <h3 style={{ marginBottom: '1rem' }}>Upload Files</h3>
         <div className="form-group">
+          <label htmlFor="fileInput">Select Files</label>
           <input
+            id="fileInput"
             type="file"
             multiple
             onChange={handleFileSelect}
-            accept=".pdf,.txt,.csv,.xlsx,.doc,.docx"
-            style={{ padding: '0.5rem' }}
           />
         </div>
-
-        {selectedFiles && selectedFiles.length > 0 && (
-          <div style={{ marginBottom: '1rem' }}>
-            <strong>Selected files ({selectedFiles.length}):</strong>
-            <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
-              {Array.from(selectedFiles).map((file, index) => (
-                <li key={index}>{file.name} ({(file.size / 1024).toFixed(1)} KB)</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
+        
         <button 
-          className="btn btn-primary" 
+          className="btn btn-secondary" 
           onClick={handleUpload}
           disabled={isUploading || !selectedFiles}
+          style={{ marginTop: '1rem' }}
         >
           {isUploading ? 'Uploading...' : 'Upload Files'}
         </button>
 
         {uploadStatus && (
-          <div style={{ marginTop: '1rem' }}>
-            <strong>Upload Results:</strong>
-            <div style={{ marginTop: '0.5rem', color: 'green' }}>
-              ✓ Uploaded: {uploadStatus.uploaded.length} file(s)
-            </div>
+          <div style={{ marginTop: '0.5rem', color: 'green' }}>
+            ✓ Uploaded: {uploadStatus.uploaded.length} file(s)
             {uploadStatus.errors && uploadStatus.errors.length > 0 && (
-              <div style={{ color: 'red' }}>
-                ✗ Errors: {uploadStatus.errors.length}
-              </div>
+              <span style={{ color: 'red' }}> ✗ Errors: {uploadStatus.errors.length}</span>
             )}
           </div>
         )}
       </div>
 
-      {/* Original Extract Section */}
-      <div className="form-group">
-        <label htmlFor="directory">Directory</label>
-        <input
-          id="directory"
-          type="text"
-          value={directory}
-          onChange={(e) => setDirectory(e.target.value)}
-          placeholder="Enter directory path (e.g., ./dataset)"
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="output">Output File</label>
-        <input
-          id="output"
-          type="text"
-          value={output}
-          onChange={(e) => setOutput(e.target.value)}
-          placeholder="a.out"
-        />
-      </div>
-
+      {/* Extract Button */}
       <button 
         className="btn btn-primary" 
         onClick={handleExtract}
         disabled={isLoading}
+        style={{ marginBottom: '2rem' }}
       >
-        {isLoading ? 'Extracting...' : 'Extract Metadata'}
+        {isLoading ? 'Extracting...' : 'Extract Metadata from Dataset'}
       </button>
 
       {error && <div className="error">{error}</div>}
@@ -240,8 +188,13 @@ function ExtractView({ onDataExtracted }: ExtractViewProps) {
               </div>
               <div className="result-meta">
                 <div>Created: {file.creation_date}</div>
-                <div>Pages: {file.contents.length}</div>
+                <div>Pages/Lines: {file.contents.length}</div>
               </div>
+              {file.extra && file.extra !== '{}' && (
+                <div className="result-extra">
+                  <strong>Extra:</strong> {file.extra}
+                </div>
+              )}
             </div>
           ))}
         </div>
