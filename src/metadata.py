@@ -13,7 +13,7 @@ def data_from_pdf(pdf_data: str):
     
     for page in doc.pages:
         if page.extract_text() == '':
-            contents.append("NaT")
+            contents.append("{image}")
         else:
             contents.append(page.extract_text())
 
