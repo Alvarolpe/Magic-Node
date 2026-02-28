@@ -1,14 +1,14 @@
 import sys
 import itertools
 from typing import Any
-from logic import extract_metadata
+from logic import push_metadata
 
 
 DEFAULTS = {
     "dir": ".",
     "out": "a.out",
     "host": "localhost",
-    "port": 9090,
+    "port": 5432,
     "startDate": None,
     "endDate": None,
     "usersMentioned": [],
@@ -27,9 +27,9 @@ def cli():
     if args["help"] == True:
         print("""
               Operation:
-                  extract, e            Pulls the metadata from the specified
-                                        [--dir]ectory.
-                  store, s              Stores the metadata from the specified
+                  push, p               Pulls the metadata from the specified
+                                        [--dir]ectory and updates the database.
+                                        Stores the metadata from the specified
                                         [--in]put file onto the
                                         [--host][--port] machine. This is your
                                         denodo socket is located.
@@ -50,12 +50,12 @@ def cli():
         return
 
     match sys.argv[1]:
-        case "extract" | "e":
+        case "push" | "p":
             # Extract the metadata from the args["dir"] directory
             #
             # Presumably something like extract(args) should do.
             # Maybe returns the data / writes it to a file
-            print(extract_metadata(args))
+            print(push_metadata(args))
 
         case "store" | "s":
             # Send the metadata to the denodo database
