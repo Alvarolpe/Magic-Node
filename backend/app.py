@@ -1,13 +1,15 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
-import json
+import sys
 import glob
-import csv
-import io
 from pathlib import Path
 from typing import List
 from datetime import datetime
+
+# Add parent directory to path to import logic module
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.logic import extract_metadata
 
 app = FastAPI()
 
@@ -20,9 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuration
-UPLOAD_FOLDER = '../dataset'
-DATASET_FOLDER = '../dataset'
+# Configuration - use absolute paths
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+DATASET_FOLDER = os.path.join(BASE_DIR, 'dataset')
 ALLOWED_EXTENSIONS = {'pdf', 'txt', 'csv', 'xlsx', 'doc', 'docx'}
 
 # In-memory storage for stored metadata (simulating database)
@@ -36,41 +39,98 @@ def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def extract_metadata_from_files():
-    """Extract metadata from files in the dataset folder"""
+    """Extract metadata from files in both dataset and uploads folders using logic.py"""
     files_data = []
     
-    if not os.path.exists(DATASET_FOLDER):
-        return files_data
+    # Combine both folders for extraction
+    all_folders = [DATASET_FOLDER, UPLOAD_FOLDER]
     
-    for doc in glob.glob(f"{DATASET_FOLDER}/*"):
-        filename = os.path.basename(doc)
-        ext = Path(doc).suffix.lower()
+    try:
+        # Use the logic.py extract_metadata function for each folder
+        import csv
+        import io
         
-        file_info = {
-            "name": filename,
-            "contents": [],
-            "creation_date": datetime.fromtimestamp(os.path.getctime(doc)).isoformat(),
-            "extra": "{}"
-        }
-        
-        # Extract text content based on file type
-        if ext == '.txt':
+        for folder in all_folders:
+            if not os.path.exists(folder):
+                continue
+                
             try:
-                with open(doc, 'r', encoding='utf-8', errors='ignore') as f:
-                    file_info["contents"] = [line.strip() for line in f.readlines()]
-            except:
-                pass
-        elif ext == '.csv':
-            try:
-                with open(doc, 'r', encoding='utf-8', errors='ignore') as f:
-                    file_info["contents"] = [line.strip() for line in f.readlines()]
-            except:
-                pass
-        elif ext == '.pdf':
-            # For PDF files, just mark that it's a PDF
-            file_info["contents"] = ["[PDF content - extraction not available]"]
-        
-        files_data.append(file_info)
+                args = {"dir": folder}
+                csv_output = extract_metadata(args)
+                
+                if csv_output:
+                    reader = csv.DictReader(io.StringIO(csv_output))
+                    for row in reader:
+                        file_info = {
+                            "name": row.get("name", ""),
+                            "contents": eval(row.get("contents", "[]")) if row.get("contents") else [],
+                            "creation_date": row.get("creation_date", ""),
+                            "extra": row.get("extra", "{}")
+                        }
+                        files_data.append(file_info)
+            except Exception as e:
+                # Fallback to direct file reading for this folder
+                for doc in glob.glob(f"{folder}/*"):
+                    filename = os.path.basename(doc)
+                    ext = Path(doc).suffix.lower()
+                    
+                    file_info = {
+                        "name": filename,
+                        "contents": [],
+                        "creation_date": datetime.fromtimestamp(os.path.getctime(doc)).isoformat(),
+                        "extra": "{}"
+                    }
+                    
+                    # Extract text content based on file type
+                    if ext == '.txt':
+                        try:
+                            with open(doc, 'r', encoding='utf-8', errors='ignore') as f:
+                                file_info["contents"] = [line.strip() for line in f.readlines()]
+                        except:
+                            pass
+                    elif ext == '.csv':
+                        try:
+                            with open(doc, 'r', encoding='utf-8', errors='ignore') as f:
+                                file_info["contents"] = [line.strip() for line in f.readlines()]
+                        except:
+                            pass
+                    elif ext == '.pdf':
+                        file_info["contents"] = ["[PDF content - extraction not available]"]
+                    
+                    files_data.append(file_info)
+    
+    except Exception as e:
+        # Final fallback - just try to read from both folders directly
+        for folder in all_folders:
+            if not os.path.exists(folder):
+                continue
+            for doc in glob.glob(f"{folder}/*"):
+                filename = os.path.basename(doc)
+                ext = Path(doc).suffix.lower()
+                
+                file_info = {
+                    "name": filename,
+                    "contents": [],
+                    "creation_date": datetime.fromtimestamp(os.path.getctime(doc)).isoformat(),
+                    "extra": "{}"
+                }
+                
+                if ext == '.txt':
+                    try:
+                        with open(doc, 'r', encoding='utf-8', errors='ignore') as f:
+                            file_info["contents"] = [line.strip() for line in f.readlines()]
+                    except:
+                        pass
+                elif ext == '.csv':
+                    try:
+                        with open(doc, 'r', encoding='utf-8', errors='ignore') as f:
+                            file_info["contents"] = [line.strip() for line in f.readlines()]
+                    except:
+                        pass
+                elif ext == '.pdf':
+                    file_info["contents"] = ["[PDF content - extraction not available]"]
+                
+                files_data.append(file_info)
     
     return files_data
 

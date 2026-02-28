@@ -35,7 +35,7 @@ def data_from_pdf(pdf_data: str):
 
 
 def data_from_txt(txt_data: str):
-    with open(txt_data, "r") as file:
+    with open(txt_data, "r", encoding="utf-8", errors="ignore") as file:
         contents = [v.strip() for v in file.readlines()]
         return data_model.FileData(
                 name= os.path.basename(txt_data),
