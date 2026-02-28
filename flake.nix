@@ -24,6 +24,7 @@
               watchexec
               python314
               python314Packages.pypdf
+              python314Packages.requests
               python314Packages.psycopg2
               nodejs_25
               dbmate

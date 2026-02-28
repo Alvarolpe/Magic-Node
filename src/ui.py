@@ -119,35 +119,13 @@ def parse_args(arg1: str, arg2: str):
             return {}
 
 
-def extractDuration(string, sign):
-    match string[-1]:
-        case "h" | "H":
-            return datetime.timedelta(hours = sign * int(string[1:-1]))
-        case "m":
-            return datetime.timedelta(minutes = sign * int(string[1:-1]))
-        case "s" | "S":
-            return datetime.timedelta(seconds = sign * int(string[1:-1]))
-        case "Y" | "y":
-            return datetime.timedelta(days = sign * 365 * int(string[1:-1]))
-        case "M":
-            return datetime.timedelta(days = sign * 30 * int(string[1:-1]))
-        case "D" | "d":
-            return datetime.timedelta(days = sign * int(string[1:-1]))
-
-
 def parseDate(string):
     """
     Parse a date.
     Allowed formats are:
         - ISO8601 (YYYY-MM-DDTHH:MM:SS)
-        - Time deltas (+1D|+5Y|-5h|+3s)
         - Spanish dates (DD/MM/YYYY)
     """
-
-    if string[0] == "+":
-        return extractDuration(string, 1)
-    if string[0] == "-":
-        return extractDuration(string, -1)
 
     # Spanish format 🇪🇸🐂🇪🇸🐂🇪🇸
     if string[2] == "/":
@@ -192,4 +170,5 @@ def iter2(l: list[str], f, merge_func) -> Any:
         prev = curr
 
     return ret
+
 

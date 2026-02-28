@@ -47,7 +47,7 @@
       extra json not null
     );
     ```
-    
+
 11. entra en [http://localhost:9090/denodo-design-studio/]
     añade una base de datos postgres en "connect to a datasource".
     el host es "172.18.0.1" y el puerto es 5432. User denodo_user, password denodo_password y base de datos my_database.
@@ -61,20 +61,3 @@
 Para la aplicación CLI, instala `pypdf`. se ejecuta con `python3 src/main.py [comando] [flags]`. Hay un comando de ayuda disponible con `python3 src/main.py --help`.
 
 Para la aplicación gráfica, instala `pypdf` y `nodejs_25`. Desde `frontend/`, ejecuta `npm run dev` y, en otra terminal, desde `backend`, `python app.py`. La aplicación estará en `localhost:5173`
-
-## TODOs
-- [x] Recorrer directorio
-    - [x] Extraer metadatos
-    - [x] Leer contenidos
-
-> [!NOTE]
-> Quizas generar formato intermedio para despois alimentar a denodo
-
-- [ ] Insertar metadatos en denodo
-    - [ ] Taggeo correcto, non podemos fiarnos de IA, hai que nombrar campos
-- [ ] Queries, extensible:
-    - [ ] Fecha de creacion ~ Fecha de proyecto origen
-    - [ ] Nombres de participantes - Necesita ordenado de tokens en archivos
-    - [ ] Resultados - Aplazado/Completado/Sigue su curso
-    - [ ] ...
-
