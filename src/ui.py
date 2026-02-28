@@ -1,8 +1,8 @@
 import sys
 import itertools
 from typing import Any
-from logic import push_metadata
-
+from logic import push_metadata, send_query
+import datetime
 
 DEFAULTS = {
     "dir": ".",
@@ -12,7 +12,7 @@ DEFAULTS = {
     "startDate": None,
     "endDate": None,
     "usersMentioned": [],
-    "reunionResult": None,
+    "reunionResult": None,   
     "input": "data.csv",
     "help": False,
 }
@@ -68,7 +68,7 @@ def cli():
             #
             # Presumably something like query(args) should do.
             # could return something like ("ok", response) | ("error", description)
-            pass
+            send_query(args)
 
 
 
@@ -180,12 +180,12 @@ def update(d1, d2):
     return d1
 
 
-def iter2(l: list[str], f: Callable[[str, str], Any], merge_func: Callable[[Any, Any], Any]) -> Any:
+def iter2(l: list[str], f, merge_func) -> Any:
     ret = {}
     prev = None
     for curr in l:
         if curr == None:
-            prev = e
+            prev = curr
             continue
 
         ret = merge_func(ret, f(prev, curr))

@@ -1,4 +1,27 @@
 services:
+
+  # --- AQUÍ OCURRE LA MAGIA ---
+  postgres-db:
+    image: postgres:latest
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: denodo_user
+      POSTGRES_PASSWORD: denodo_password
+      POSTGRES_DB: my_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/main
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U denodo_user -d my_database"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      ai-sdk-net:
+        ipv4_address: 172.20.0.2
+    restart: unless-stopped
+
   vdp:
     image: harbor.open.denodo.com/denodo-express/denodo-platform:latest
     container_name: vdp
@@ -10,13 +33,15 @@ services:
       - "9994:9994"
     volumes:
       - ./config/denodo.lic:/opt/denodo/conf/denodo.lic:ro
+      - csv_data:/opt/denodo/csv-data
     command: --vdpserver --datacatalog --designstudio
-    networks:
-      - ai-sdk-net
-    restart: unless-stopped
     depends_on:
       postgres-db:
         condition: service_healthy
+    networks:
+      ai-sdk-net:
+        ipv4_address: 172.20.0.3
+    restart: unless-stopped
 
   ai-sdk:
     image: harbor.open.denodo.com/denodo-express/ai-sdk:latest
@@ -32,35 +57,19 @@ services:
       - vdp
     command: bash -c "python run.py both --host vdp --no-logs"
     networks:
-      - ai-sdk-net
+      ai-sdk-net:
+        ipv4_address: 172.20.0.4
     restart: on-failure
 
-  # --- LA MAGIA ESTÁ AQUÍ ---
-  postgres-db:
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U denodo_user -d my_database"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    image: postgres:latest
-    container_name: postgres-db
-    environment:
-      POSTGRES_USER: denodo_user
-      POSTGRES_PASSWORD: denodo_password
-      POSTGRES_DB: my_database
-    ports:
-      - "5432:5432" # Exponemos al host por si quieres entrar desde DBeaver/pgAdmin
-    networks:
-      ai-sdk-net:
-        ipv4_address: 172.18.0.1
-    volumes:
-      - postgres_data:/var/lib/postgresql/18/main
-    restart: unless-stopped
+volumes:
+  postgres_data:
+  csv_data:
 
 networks:
   ai-sdk-net:
     name: ai-sdk-docker
     driver: bridge
-
-volumes:
-  postgres_data:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

@@ -1,7 +1,7 @@
 import pypdf as pdf
 import json
 import glob
-import src.data_model as data_model
+import data_model
 import datetime
 import os
 from pathlib import PurePosixPath, Path
