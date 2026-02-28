@@ -26,10 +26,13 @@ def data_from_pdf(pdf_data: str):
     }
     reader_string = json.dumps(data, separators=(',',':'))
 
+    # Use actual filename instead of metadata title
+    filename = os.path.basename(pdf_data)
+
     return data_model.FileData(
-        name = meta.title,
+        name = filename,
         contents = contents,
-        creation_date = meta.creation_date,
+        creation_date = meta.creation_date if meta.creation_date else datetime.datetime.fromtimestamp(os.path.getctime(pdf_data)),
         extra = reader_string
     )
 
